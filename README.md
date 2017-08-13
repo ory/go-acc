@@ -1,4 +1,4 @@
-# accurate-code-coverage
+# go-acc
 
 A tool for reporting accurate Code Coverage in Golang. It is an adaption of the following bash script:
 
@@ -11,7 +11,7 @@ go list ./... | grep -v /cmd | grep -v /vendor | xargs -n1 -I{} sh -c 'go test -
 ## Installation & Usage
 
 ```
-$ go get github.com/ory/accurate-code-coverage/go-acc
+$ go get github.com/ory/go-acc
 $ go-acc
 A tool for reporting accurate Code Coverage in Golang.
 
