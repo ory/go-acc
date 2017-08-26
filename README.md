@@ -1,6 +1,6 @@
 # go-acc
 
-A tool for reporting accurate Code Coverage in Golang. It is an adaption of the following bash script:
+A tool for reporting accurate Code Coverage in Golang. It is a cross platform (osx, windows, linux) adaption of the following bash script:
 
 ```bash
 touch ./coverage.tmp
