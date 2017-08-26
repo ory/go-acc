@@ -1,4 +1,4 @@
-package accurate_code_coverage
+package main
 
 import "github.com/ory/go-acc/cmd"
 
