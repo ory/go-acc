@@ -38,7 +38,7 @@ $ go-acc $(glide novendor)`,
 		payload := "mode: " + mode + "\n"
 		newArgs := []string{}
 		for _, a := range args {
-			if a[len(a)-4:] == "/..." {
+			if len(a) > 4 && a[len(a)-4:] == "/..." {
 				var buf bytes.Buffer
 				c := exec.Command("go", "list", a)
 				c.Stdout = &buf
