@@ -63,7 +63,7 @@ $ go-acc $(glide novendor)`,
 		files := make([]string, len(newArgs))
 		for k, a := range newArgs {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
-			c := exec.Command("go", "test", "-covermode="+mode, "-short", "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
+			c := exec.Command("go", "test", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 			c.Stdin = os.Stdin
