@@ -60,15 +60,10 @@ $ go-acc $(glide novendor)`,
 			}
 		}
 
-		var short string
-		if ok, err := cmd.Flags().GetBool("short"); ok && err != nil {
-			short = "-short"
-		}
-
 		files := make([]string, len(newArgs))
 		for k, a := range newArgs {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
-			c := exec.Command("go", "test", short, "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
+			c := exec.Command("go", "test", "-covermode="+mode, "-short", "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 			c.Stdin = os.Stdin
@@ -122,7 +117,6 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	RootCmd.Flags().Bool("short", false, "Run tests in short mode")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
 }
