@@ -35,6 +35,8 @@ $ go-acc $(glide novendor)`,
 			fatalf("%s", err)
 		}
 
+		verbose, _ := cmd.Flags().GetBool("verbose")
+
 		payload := "mode: " + mode + "\n"
 		newArgs := []string{}
 		for _, a := range args {
@@ -63,7 +65,12 @@ $ go-acc $(glide novendor)`,
 		files := make([]string, len(newArgs))
 		for k, a := range newArgs {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
-			c := exec.Command("go", "test", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
+			var c *exec.Cmd
+			if verbose {
+				c = exec.Command("go", "test", "-v", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
+			} else {
+				c = exec.Command("go", "test", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
+			}
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 			c.Stdin = os.Stdin
@@ -118,6 +125,7 @@ func init() {
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
+	RootCmd.Flags().BoolP("verbose", "v", false, "Verbose output: log all tests as they are run. Also print all	text from Log and Logf calls even if the test succeeds")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
 }
 
