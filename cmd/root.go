@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,12 +19,16 @@ var cfgFile string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "go-acc <packages...>",
+	Use:   "go-acc <flags> <packages...>",
 	Short: "Receive accurate code coverage reports for Golang (Go)",
 	Example: `$ go-acc github.com/some/package
 $ go-acc -o my-coverfile.txt github.com/some/package
 $ go-acc ./...
-$ go-acc $(glide novendor)`,
+$ go-acc $(glide novendor)
+
+You can pass all flags defined by "go test" after "--":
+$ go-acc . -- -short -v -failfast
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			cmd.Help()
@@ -35,42 +40,50 @@ $ go-acc $(glide novendor)`,
 			fatalf("%s", err)
 		}
 
-		verbose, _ := cmd.Flags().GetBool("verbose")
-
 		payload := "mode: " + mode + "\n"
-		newArgs := []string{}
+		var packages []string
+		var passthrough []string
 		for _, a := range args {
-			if len(a) > 4 && a[len(a)-4:] == "/..." {
-				var buf bytes.Buffer
-				c := exec.Command("go", "list", a)
-				c.Stdout = &buf
-				c.Stderr = &buf
-				if err := c.Run(); err != nil {
-					fatalf("%s", err)
-				}
-
-				add := []string{}
-				for _, s := range strings.Split(buf.String(), "\n") {
-					if len(s) > 0 {
-						add = append(add, s)
-					}
-				}
-
-				newArgs = append(newArgs, add...)
+			if len(a) > 1 && a[0] == '-' && a != "--" {
+				passthrough = append(passthrough, a)
 			} else {
-				newArgs = append(newArgs, a)
+				if len(a) > 4 && a[len(a)-4:] == "/..." {
+					var buf bytes.Buffer
+					c := exec.Command("go", "list", a)
+					c.Stdout = &buf
+					c.Stderr = &buf
+					if err := c.Run(); err != nil {
+						fatalf("%s", err)
+					}
+
+					add := []string{}
+					for _, s := range strings.Split(buf.String(), "\n") {
+						if len(s) > 0 {
+							add = append(add, s)
+						}
+					}
+
+					packages = append(packages, add...)
+				} else {
+					packages = append(packages, a)
+				}
 			}
 		}
 
-		files := make([]string, len(newArgs))
-		for k, a := range newArgs {
+		files := make([]string, len(packages))
+		for k, pkg := range packages {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
 			var c *exec.Cmd
-			if verbose {
-				c = exec.Command("go", "test", "-v", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
-			} else {
-				c = exec.Command("go", "test", "-covermode="+mode, "-coverprofile="+files[k], "-coverpkg="+strings.Join(newArgs, ","), a)
-			}
+			ca := append(append(
+				[]string{
+					"test",
+					"-covermode=" + mode,
+					"-coverprofile=" + files[k],
+					"-coverpkg=" + strings.Join(packages, ","),
+				},
+				passthrough...),
+				pkg)
+			c = exec.Command("go", ca...)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
 			c.Stdin = os.Stdin
@@ -125,7 +138,6 @@ func init() {
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
-	RootCmd.Flags().BoolP("verbose", "v", false, "Verbose output: log all tests as they are run. Also print all	text from Log and Logf calls even if the test succeeds")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
 }
 
@@ -149,4 +161,23 @@ func fatalf(msg string, args ...interface{}) {
 	fmt.Printf(msg, args...)
 	fmt.Println("")
 	os.Exit(1)
+}
+
+type filter struct {
+	dtl io.Writer
+}
+
+func (f *filter) Write(p []byte) (n int, err error) {
+	for _, ppp := range strings.Split(string(p), "\n") {
+		if strings.Contains(ppp, "warning: no packages being tested depend on matches for pattern") {
+			continue
+		} else {
+			nn, err := f.dtl.Write(p)
+			n = n + nn
+			if err != nil {
+				return n, err
+			}
+		}
+	}
+	return len(p), nil
 }
