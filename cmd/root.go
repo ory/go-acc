@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"github.com/ory/x/flagx"
 	"io"
 	"io/ioutil"
 	"os"
@@ -33,6 +34,11 @@ $ go-acc . -- -short -v -failfast
 		if len(args) == 0 {
 			cmd.Help()
 			return
+		}
+
+		mode := flagx.MustGetString(cmd, "covermode")
+		if flagx.MustGetBool(cmd, "verbose") {
+			fmt.Println("Flag -v has been deprecated, use `go acc -- -v` instead!")
 		}
 
 		mode, err := cmd.Flags().GetString("covermode")
@@ -137,6 +143,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.Flags().BoolP("verbose", "v", false, "Does nothing, there for compatibility")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
 }
