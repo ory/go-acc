@@ -1,16 +1,18 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ory/x/flagx"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
+	"github.com/ory/x/flagx"
 	"github.com/pborman/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -90,12 +92,34 @@ $ go-acc . -- -short -v -failfast
 				passthrough...),
 				pkg)
 			c = exec.Command("go", ca...)
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			c.Stdin = os.Stdin
-			if err := c.Run(); err != nil {
+			//var buf bytes.Buffer
+			//c.Stdout = &buf
+			//c.Stderr = &buf
+			//c.Stdin = os.Stdin
+			//
+			stderr, err := c.StderrPipe()
+			if err != nil {
 				fatalf("%s", err)
 			}
+			stdout, err := c.StdoutPipe()
+			if err != nil {
+				fatalf("%s", err)
+			}
+
+			if err := c.Start(); err != nil {
+				fatalf("%s", err)
+			}
+
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go scan(&wg, stderr)
+			go scan(&wg, stdout)
+
+			if err := c.Wait(); err != nil {
+				fatalf("%s", err)
+			}
+
+			wg.Wait()
 		}
 
 		for _, file := range files {
@@ -121,6 +145,18 @@ $ go-acc . -- -short -v -failfast
 			fatalf("%s", err)
 		}
 	},
+}
+
+func scan(wg *sync.WaitGroup, r io.ReadCloser) {
+	defer wg.Done()
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "warning: no packages being tested depend on matches for pattern") {
+			continue
+		}
+		fmt.Println(line)
+	}
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
