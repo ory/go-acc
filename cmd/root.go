@@ -155,7 +155,7 @@ func scan(wg *sync.WaitGroup, r io.ReadCloser) {
 		if strings.Contains(line, "warning: no packages being tested depend on matches for pattern") {
 			continue
 		}
-		fmt.Println(line)
+		fmt.Println(strings.Split(line, "% of statements in")[0])
 	}
 }
 
