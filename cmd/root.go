@@ -12,18 +12,18 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ory/x/cmdx"
 	"github.com/ory/x/flagx"
 	"github.com/pborman/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
-
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "go-acc <flags> <packages...>",
 	Short: "Receive accurate code coverage reports for Golang (Go)",
+	Args:  cobra.MinimumNArgs(1),
 	Example: `$ go-acc github.com/some/package
 $ go-acc -o my-coverfile.txt github.com/some/package
 $ go-acc ./...
@@ -33,48 +33,44 @@ You can pass all flags defined by "go test" after "--":
 $ go-acc . -- -short -v -failfast
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			cmd.Help()
-			return
-		}
-
 		mode := flagx.MustGetString(cmd, "covermode")
 		if flagx.MustGetBool(cmd, "verbose") {
 			fmt.Println("Flag -v has been deprecated, use `go acc -- -v` instead!")
 		}
 
-		mode, err := cmd.Flags().GetString("covermode")
-		if err != nil {
-			fatalf("%s", err)
-		}
-
 		payload := "mode: " + mode + "\n"
+
 		var packages []string
 		var passthrough []string
+
 		for _, a := range args {
-			if len(a) > 1 && a[0] == '-' && a != "--" {
+			if len(a) == 0 {
+				continue
+			}
+
+			// The first tag indicates that we're now passing through all tags
+			if a[0] == '-' || len(passthrough) > 0 {
 				passthrough = append(passthrough, a)
-			} else {
-				if len(a) > 4 && a[len(a)-4:] == "/..." {
-					var buf bytes.Buffer
-					c := exec.Command("go", "list", a)
-					c.Stdout = &buf
-					c.Stderr = &buf
-					if err := c.Run(); err != nil {
-						fatalf("%s", err)
-					}
+				continue
+			}
 
-					add := []string{}
-					for _, s := range strings.Split(buf.String(), "\n") {
-						if len(s) > 0 {
-							add = append(add, s)
-						}
-					}
+			if len(a) > 4 && a[len(a)-4:] == "/..." {
+				var buf bytes.Buffer
+				c := exec.Command("go", "list", a)
+				c.Stdout = &buf
+				c.Stderr = &buf
+				cmdx.Must(c.Run(), "unable to run go list")
 
-					packages = append(packages, add...)
-				} else {
-					packages = append(packages, a)
+				var add []string
+				for _, s := range strings.Split(buf.String(), "\n") {
+					if len(s) > 0 {
+						add = append(add, s)
+					}
 				}
+
+				packages = append(packages, add...)
+			} else {
+				packages = append(packages, a)
 			}
 		}
 
@@ -92,11 +88,7 @@ $ go-acc . -- -short -v -failfast
 				passthrough...),
 				pkg)
 			c = exec.Command("go", ca...)
-			//var buf bytes.Buffer
-			//c.Stdout = &buf
-			//c.Stderr = &buf
-			//c.Stdin = os.Stdin
-			//
+
 			stderr, err := c.StderrPipe()
 			if err != nil {
 				fatalf("%s", err)
@@ -170,14 +162,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
-	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.accurate-code-coverage.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	RootCmd.Flags().BoolP("verbose", "v", false, "Does nothing, there for compatibility")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
@@ -186,18 +170,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
+	viper.AutomaticEnv() // read in environment variables that match
 
-	viper.SetConfigName(".accurate-code-coverage") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")                   // adding home directory as first search path
-	viper.AutomaticEnv()                           // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
 }
 
 func fatalf(msg string, args ...interface{}) {
