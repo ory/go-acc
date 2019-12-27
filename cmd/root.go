@@ -63,7 +63,11 @@ $ go-acc . -- -short -v -failfast
 
 				var add []string
 				for _, s := range strings.Split(buf.String(), "\n") {
-					if len(s) > 0 {
+					// Remove go system messages, e.g. messages from go mod	like
+					//   go: finding ...
+					//   go: downloading ...
+					//   go: extracting ...
+					if len(s) > 0 && !strings.HasPrefix(s, "go: ") {
 						add = append(add, s)
 					}
 				}
