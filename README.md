@@ -26,6 +26,7 @@ $ go-acc $(glide novendor)
 
 Flags:
       --covermode string   Which code coverage mode to use (default "atomic")
+      --ignore strings     Will ignore packages that contains any of these strings
   -o, --output string      Location for the output file (default "coverage.txt")
   -t, --toggle             Help message for toggle
 

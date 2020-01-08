@@ -38,6 +38,8 @@ $ go-acc . -- -short -v -failfast
 			fmt.Println("Flag -v has been deprecated, use `go acc -- -v` instead!")
 		}
 
+		ignores := flagx.MustGetStringSlice(cmd, "ignore")
+
 		payload := "mode: " + mode + "\n"
 
 		var packages []string
@@ -68,7 +70,18 @@ $ go-acc . -- -short -v -failfast
 					//   go: downloading ...
 					//   go: extracting ...
 					if len(s) > 0 && !strings.HasPrefix(s, "go: ") {
-						add = append(add, s)
+						// Test if package name contains ignore string
+						ignore := false
+						for _, ignoreStr := range ignores {
+							if strings.Contains(s, ignoreStr) {
+								ignore = true
+								break
+							}
+						}
+
+						if !ignore {
+							add = append(add, s)
+						}
 					}
 				}
 
@@ -170,6 +183,7 @@ func init() {
 	RootCmd.Flags().BoolP("verbose", "v", false, "Does nothing, there for compatibility")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
+	RootCmd.Flags().StringSlice("ignore", []string{}, "Will ignore packages that contains any of these strings")
 }
 
 // initConfig reads in config file and ENV variables if set.
