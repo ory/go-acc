@@ -1,4 +1,4 @@
-module github.com/ory/go-acc
+module github.com/schlund/go-acc
 
 require (
 	github.com/ory/x v0.0.85
