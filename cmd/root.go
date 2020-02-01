@@ -35,7 +35,7 @@ $ go-acc . -- -short -v -failfast
 	Run: func(cmd *cobra.Command, args []string) {
 		mode := flagx.MustGetString(cmd, "covermode")
 		if flagx.MustGetBool(cmd, "verbose") {
-			fmt.Println("Flag -v has been deprecated, use `go acc -- -v` instead!")
+			fmt.Println("Flag -v has been deprecated, use `go-acc -- -v` instead!")
 		}
 
 		ignores := flagx.MustGetStringSlice(cmd, "ignore")
