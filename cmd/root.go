@@ -32,6 +32,11 @@ $ go-acc  --ignore pkga,pkgb .
 
 You can pass all flags defined by "go test" after "--":
 $ go-acc . -- -short -v -failfast
+
+You can pick an alternative go test binary using:
+
+GO_TEST_BINARY="go test"
+GO_TEST_BINARY="gotest"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		mode := flagx.MustGetString(cmd, "covermode")
@@ -94,17 +99,28 @@ $ go-acc . -- -short -v -failfast
 		files := make([]string, len(packages))
 		for k, pkg := range packages {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
+
+			gotest := os.Getenv("GO_TEST_BINARY")
+			if gotest == "" {
+				gotest = "go test"
+			}
+
+			gt := strings.Split(gotest, " ")
+			if len(gt) != 2 {
+				gt = append(gt, "")
+			}
+
 			var c *exec.Cmd
 			ca := append(append(
 				[]string{
-					"test",
+					gt[1],
 					"-covermode=" + mode,
 					"-coverprofile=" + files[k],
 					"-coverpkg=" + strings.Join(packages, ","),
 				},
 				passthrough...),
 				pkg)
-			c = exec.Command("go", ca...)
+			c = exec.Command(gt[0], ca...)
 
 			stderr, err := c.StderrPipe()
 			if err != nil {
