@@ -28,6 +28,7 @@ var RootCmd = &cobra.Command{
 $ go-acc -o my-coverfile.txt github.com/some/package
 $ go-acc ./...
 $ go-acc $(glide novendor)
+$ go-acc  --ignore pkga,pkgb .
 
 You can pass all flags defined by "go test" after "--":
 $ go-acc . -- -short -v -failfast
@@ -39,7 +40,6 @@ $ go-acc . -- -short -v -failfast
 		}
 
 		ignores := flagx.MustGetStringSlice(cmd, "ignore")
-
 		payload := "mode: " + mode + "\n"
 
 		var packages []string
