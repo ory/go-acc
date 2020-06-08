@@ -13,8 +13,6 @@ import (
 	"sync"
 
 	"github.com/ory/viper"
-	"github.com/ory/x/cmdx"
-	"github.com/ory/x/flagx"
 	"github.com/pborman/uuid"
 	"github.com/spf13/cobra"
 )
@@ -38,13 +36,23 @@ You can pick an alternative go test binary using:
 GO_TEST_BINARY="go test"
 GO_TEST_BINARY="gotest"
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		mode := flagx.MustGetString(cmd, "covermode")
-		if flagx.MustGetBool(cmd, "verbose") {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		mode, err := cmd.Flags().GetString("covermode")
+		if err != nil {
+			return err
+		}
+
+		if verbose, err := cmd.Flags().GetBool("verbose"); err != nil {
+			return err
+		} else if verbose {
 			fmt.Println("Flag -v has been deprecated, use `go-acc -- -v` instead!")
 		}
 
-		ignores := flagx.MustGetStringSlice(cmd, "ignore")
+		ignores, err := cmd.Flags().GetStringSlice("ignore")
+		if err != nil {
+			return err
+		}
+
 		payload := "mode: " + mode + "\n"
 
 		var packages []string
@@ -66,7 +74,9 @@ GO_TEST_BINARY="gotest"
 				c := exec.Command("go", "list", a)
 				c.Stdout = &buf
 				c.Stderr = &buf
-				cmdx.Must(c.Run(), "unable to run go list")
+				if err := c.Run(); err != nil {
+					return fmt.Errorf("unable to run go list: %w", err)
+				}
 
 				var add []string
 				for _, s := range strings.Split(buf.String(), "\n") {
