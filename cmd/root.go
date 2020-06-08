@@ -134,15 +134,15 @@ GO_TEST_BINARY="gotest"
 
 			stderr, err := c.StderrPipe()
 			if err != nil {
-				fatalf("%s", err)
+				return err
 			}
 			stdout, err := c.StdoutPipe()
 			if err != nil {
-				fatalf("%s", err)
+				return err
 			}
 
 			if err := c.Start(); err != nil {
-				fatalf("%s", err)
+				return err
 			}
 
 			var wg sync.WaitGroup
@@ -151,7 +151,7 @@ GO_TEST_BINARY="gotest"
 			go scan(&wg, stdout)
 
 			if err := c.Wait(); err != nil {
-				fatalf("%s", err)
+				return err
 			}
 
 			wg.Wait()
@@ -164,7 +164,7 @@ GO_TEST_BINARY="gotest"
 
 			p, err := ioutil.ReadFile(file)
 			if err != nil {
-				fatalf("%s", err)
+				return err
 			}
 
 			ps := strings.Split(string(p), "\n")
@@ -173,12 +173,10 @@ GO_TEST_BINARY="gotest"
 
 		output, err := cmd.Flags().GetString("output")
 		if err != nil {
-			fatalf("%s", err)
+			return err
 		}
 
-		if err := ioutil.WriteFile(output, []byte(payload), 0644); err != nil {
-			fatalf("%s", err)
-		}
+		return ioutil.WriteFile(output, []byte(payload), 0644)
 	},
 }
 
@@ -216,12 +214,6 @@ func init() {
 func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
-}
-
-func fatalf(msg string, args ...interface{}) {
-	fmt.Printf(msg, args...)
-	fmt.Println("")
-	os.Exit(1)
 }
 
 type filter struct {
