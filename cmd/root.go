@@ -17,6 +17,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func check(err error) {
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(1)
+	}
+}
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "go-acc <flags> <packages...>",
@@ -57,7 +64,6 @@ GO_TEST_BINARY="gotest"
 
 		var packages []string
 		var passthrough []string
-
 		for _, a := range args {
 			if len(a) == 0 {
 				continue
@@ -75,7 +81,7 @@ GO_TEST_BINARY="gotest"
 				c.Stdout = &buf
 				c.Stderr = &buf
 				if err := c.Run(); err != nil {
-					return fmt.Errorf("unable to run go list: %w", err)
+					check(fmt.Errorf("unable to run go list: %w", err))
 				}
 
 				var add []string
@@ -133,26 +139,20 @@ GO_TEST_BINARY="gotest"
 			c = exec.Command(gt[0], ca...)
 
 			stderr, err := c.StderrPipe()
-			if err != nil {
-				return err
-			}
-			stdout, err := c.StdoutPipe()
-			if err != nil {
-				return err
-			}
+			check(err)
 
-			if err := c.Start(); err != nil {
-				return err
-			}
+			stdout, err := c.StdoutPipe()
+			check(err)
+
+			check(c.Start())
 
 			var wg sync.WaitGroup
 			wg.Add(2)
 			go scan(&wg, stderr)
 			go scan(&wg, stdout)
 
-			if err := c.Wait(); err != nil {
-				return err
-			}
+			check(c.Wait())
+			check(c.Start())
 
 			wg.Wait()
 		}
@@ -163,20 +163,17 @@ GO_TEST_BINARY="gotest"
 			}
 
 			p, err := ioutil.ReadFile(file)
-			if err != nil {
-				return err
-			}
+			check(err)
 
 			ps := strings.Split(string(p), "\n")
 			payload += strings.Join(ps[1:], "\n")
 		}
 
 		output, err := cmd.Flags().GetString("output")
-		if err != nil {
-			return err
-		}
+		check(err)
 
-		return ioutil.WriteFile(output, []byte(payload), 0644)
+		check(ioutil.WriteFile(output, []byte(payload), 0644))
+		return nil
 	},
 }
 
