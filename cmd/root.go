@@ -152,7 +152,6 @@ GO_TEST_BINARY="gotest"
 			go scan(&wg, stdout)
 
 			check(c.Wait())
-			check(c.Start())
 
 			wg.Wait()
 		}
