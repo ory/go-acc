@@ -199,7 +199,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	RootCmd.Flags().BoolP("verbose", "v", false, "Does nothing, there for compatibility")
 	RootCmd.Flags().StringP("output", "o", "coverage.txt", "Location for the output file")
 	RootCmd.Flags().String("covermode", "atomic", "Which code coverage mode to use")
