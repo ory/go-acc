@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ory/viper"
 	"github.com/pborman/uuid"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func check(err error) {
