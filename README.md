@@ -31,3 +31,9 @@ Flags:
   -t, --toggle             Help message for toggle
 
 ```
+
+You can pass regular go flags in bash after `--`, for example:
+
+```
+go-acc ./... -- -v -failfast -timeout=20m -tags sqlite
+```
