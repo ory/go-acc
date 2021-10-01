@@ -77,7 +77,9 @@ GO_TEST_BINARY="gotest"
 
 			if len(a) > 4 && a[len(a)-4:] == "/..." {
 				var buf bytes.Buffer
-				c := exec.Command("go", "list", a)
+				c := exec.Command("go", "list", "-test",
+					"-f", "{{.ForTest}}",
+					a)
 				c.Stdout = &buf
 				c.Stderr = &buf
 				if err := c.Run(); err != nil {
@@ -85,6 +87,7 @@ GO_TEST_BINARY="gotest"
 				}
 
 				var add []string
+				var previousLine string
 				for _, s := range strings.Split(buf.String(), "\n") {
 					// Remove go system messages, e.g. messages from go mod	like
 					//   go: finding ...
@@ -100,8 +103,11 @@ GO_TEST_BINARY="gotest"
 							}
 						}
 
-						if !ignore {
+						// `go list` results are sorted, so we can ignore
+						// duplicates from the previous line.
+						if !ignore && s != previousLine {
 							add = append(add, s)
+							previousLine = s
 						}
 					}
 				}
