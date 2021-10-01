@@ -112,19 +112,22 @@ GO_TEST_BINARY="gotest"
 			}
 		}
 
+		gotest := os.Getenv("GO_TEST_BINARY")
+		if gotest == "" {
+			gotest = "go test"
+		}
+
+		gt := strings.Split(gotest, " ")
+		if len(gt) != 2 {
+			gt = append(gt, "")
+		}
+
 		files := make([]string, len(packages))
+		pkgwg := sync.WaitGroup{}
+		pkgwg.Add(len(packages))
+
 		for k, pkg := range packages {
 			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
-
-			gotest := os.Getenv("GO_TEST_BINARY")
-			if gotest == "" {
-				gotest = "go test"
-			}
-
-			gt := strings.Split(gotest, " ")
-			if len(gt) != 2 {
-				gt = append(gt, "")
-			}
 
 			var c *exec.Cmd
 			ca := append(append(
@@ -144,17 +147,21 @@ GO_TEST_BINARY="gotest"
 			stdout, err := c.StdoutPipe()
 			check(err)
 
-			check(c.Start())
+			go func() {
+				check(c.Start())
 
-			var wg sync.WaitGroup
-			wg.Add(2)
-			go scan(&wg, stderr)
-			go scan(&wg, stdout)
+				var wg sync.WaitGroup
+				wg.Add(2)
+				go scan(&wg, stderr)
+				go scan(&wg, stdout)
 
-			check(c.Wait())
+				check(c.Wait())
 
-			wg.Wait()
+				wg.Wait()
+				pkgwg.Done()
+			}()
 		}
+		pkgwg.Wait()
 
 		for _, file := range files {
 			if _, err := os.Stat(file); os.IsNotExist(err) {
