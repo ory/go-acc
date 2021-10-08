@@ -60,12 +60,12 @@ GO_TEST_BINARY="gotest"
 			return err
 		}
 
-		tagsArg := ""
+		tagsArg := "-tags="
 		tags, err := cmd.Flags().GetStringSlice("tags")
 		if err != nil {
 			return err
 		} else if len(tags) != 0 {
-			tagsArg = "-tags="+strings.Join(tags, ",")
+			tagsArg += strings.Join(tags, ",")
 		}
 
 		payload := "mode: " + mode + "\n"
@@ -85,7 +85,11 @@ GO_TEST_BINARY="gotest"
 
 			if len(a) > 4 && a[len(a)-4:] == "/..." {
 				var buf bytes.Buffer
-				c := exec.Command("go", "list", tagsArg, a)
+				ca := []string{"list"}
+				if tagsArg != "" {
+					ca = append(ca, tagsArg)
+				}
+				c := exec.Command("go", append(ca, a)...)
 				c.Stdout = &buf
 				c.Stderr = &buf
 				if err := c.Run(); err != nil {
@@ -129,23 +133,19 @@ GO_TEST_BINARY="gotest"
 				gotest = "go test"
 			}
 
+			var ca []string
 			gt := strings.Split(gotest, " ")
-			if len(gt) != 2 {
-				gt = append(gt, "")
+			if len(gt) > 1 {
+				ca = append(ca, gt[1:]...)
 			}
-
-			var c *exec.Cmd
-			ca := append(append(
-				[]string{
-					gt[1],
+			ca = append(ca,
 					"-covermode=" + mode,
 					"-coverprofile=" + files[k],
-					"-coverpkg=" + strings.Join(packages, ","),
-					tagsArg,
-				},
-				passthrough...),
-				pkg)
-			c = exec.Command(gt[0], ca...)
+					"-coverpkg=" + strings.Join(packages, ","))
+			if tagsArg != "" {
+				ca = append(ca, tagsArg)
+			}
+			var c *exec.Cmd = exec.Command(gt[0], append(append(ca, passthrough...), pkg)...)
 
 			stderr, err := c.StderrPipe()
 			check(err)
