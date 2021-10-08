@@ -60,12 +60,12 @@ GO_TEST_BINARY="gotest"
 			return err
 		}
 
-		tagsArg := "-tags="
+		tagsArg := ""
 		tags, err := cmd.Flags().GetStringSlice("tags")
 		if err != nil {
 			return err
 		} else if len(tags) != 0 {
-			tagsArg += strings.Join(tags, ",")
+			tagsArg = "-tags=" + strings.Join(tags, ",")
 		}
 
 		payload := "mode: " + mode + "\n"
