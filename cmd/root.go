@@ -65,7 +65,7 @@ GO_TEST_BINARY="gotest"
 		if err != nil {
 			return err
 		} else if len(tags) != 0 {
-			tagsArg = "-tags="+strings.Join(tags, ",")
+			tagsArg = "-tags=" + strings.Join(tags, ",")
 		}
 
 		payload := "mode: " + mode + "\n"
@@ -85,7 +85,7 @@ GO_TEST_BINARY="gotest"
 
 			if len(a) > 4 && a[len(a)-4:] == "/..." {
 				var buf bytes.Buffer
-				c := exec.Command("go", "list", tagsArg, a)
+				c := newCmdBuilder("go list").argNoBlank(tagsArg).arg(a).exec()
 				c.Stdout = &buf
 				c.Stderr = &buf
 				if err := c.Run(); err != nil {
@@ -129,24 +129,11 @@ GO_TEST_BINARY="gotest"
 				gotest = "go test"
 			}
 
-			gt := strings.Split(gotest, " ")
-			if len(gt) != 2 {
-				gt = append(gt, "")
-			}
-
-			var c *exec.Cmd
-			ca := append(append(
-				[]string{
-					gt[1],
-					"-covermode=" + mode,
-					"-coverprofile=" + files[k],
-					"-coverpkg=" + strings.Join(packages, ","),
-					tagsArg,
-				},
-				passthrough...),
-				pkg)
-			c = exec.Command(gt[0], ca...)
-
+			c := newCmdBuilder(gotest).arg(
+				"-covermode=" + mode,
+				"-coverprofile=" + files[k],
+				"-coverpkg=" + strings.Join(packages, ","),
+			).argNoBlank(tagsArg).arg(passthrough...).arg(pkg).exec()
 			stderr, err := c.StderrPipe()
 			check(err)
 
@@ -238,4 +225,36 @@ func (f *filter) Write(p []byte) (n int, err error) {
 		}
 	}
 	return len(p), nil
+}
+
+type cmdBuilder struct {
+	cmd string
+	args []string
+}
+
+func newCmdBuilder(cmd string) *cmdBuilder {
+	c := strings.Split(cmd, " ")
+	b := &cmdBuilder{cmd: c[0]}
+	for i := 1; i < len(c); i++ {
+		b = b.argNoBlank(c[i])
+	}
+	return b
+}
+
+func (b *cmdBuilder) argNoBlank(args ...string) *cmdBuilder {
+	for _, a := range args {
+		if a != "" {
+			b.args = append(b.args, a)
+		}
+	}
+	return b
+}
+
+func (b *cmdBuilder) arg(args ...string) *cmdBuilder {
+	b.args = append(b.args, args...)
+	return b
+}
+
+func (b *cmdBuilder) exec() *exec.Cmd {
+	return exec.Command(b.cmd, b.args...)
 }
