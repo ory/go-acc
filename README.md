@@ -29,6 +29,7 @@ Flags:
       --ignore strings     Will ignore packages that contains any of these strings
   -o, --output string      Location for the output file (default "coverage.txt")
   -t, --toggle             Help message for toggle
+      --tags               Build tags for go build and go test commands
 
 ```
 
