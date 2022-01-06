@@ -130,9 +130,9 @@ GO_TEST_BINARY="gotest"
 			}
 
 			c := newCmdBuilder(gotest).arg(
-				"-covermode=" + mode,
-				"-coverprofile=" + files[k],
-				"-coverpkg=" + strings.Join(packages, ","),
+				"-covermode="+mode,
+				"-coverprofile="+files[k],
+				"-coverpkg="+strings.Join(packages, ","),
 			).argNoBlank(tagsArg).arg(passthrough...).arg(pkg).exec()
 			stderr, err := c.StderrPipe()
 			check(err)
@@ -180,7 +180,7 @@ func scan(wg *sync.WaitGroup, r io.ReadCloser) {
 		if strings.Contains(line, "warning: no packages being tested depend on matches for pattern") {
 			continue
 		}
-		fmt.Println(strings.Split(line, "% of statements in")[0])
+		fmt.Println(line)
 	}
 }
 
@@ -228,7 +228,7 @@ func (f *filter) Write(p []byte) (n int, err error) {
 }
 
 type cmdBuilder struct {
-	cmd string
+	cmd  string
 	args []string
 }
 
