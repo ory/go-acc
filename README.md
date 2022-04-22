@@ -11,7 +11,7 @@ go list ./... | grep -v /cmd | grep -v /vendor | xargs -n1 -I{} sh -c 'go test -
 ## Installation & Usage
 
 ```
-$ go install github.com/ory/go-acc
+$ go install github.com/ory/go-acc@latest
 $ go-acc
 A tool for reporting accurate Code Coverage in Golang.
 
