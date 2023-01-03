@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/magiconair/properties/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCmdBuilder(t *testing.T) {

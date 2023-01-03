@@ -5,16 +5,15 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/ory/viper"
-	"github.com/pborman/uuid"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func check(err error) {
@@ -122,7 +121,7 @@ GO_TEST_BINARY="gotest"
 
 		files := make([]string, len(packages))
 		for k, pkg := range packages {
-			files[k] = filepath.Join(os.TempDir(), uuid.New()) + ".cc.tmp"
+			files[k] = filepath.Join(os.TempDir(), fmt.Sprintf("%d.cc.tmp", rand.Uint64()))
 
 			gotest := os.Getenv("GO_TEST_BINARY")
 			if gotest == "" {
@@ -157,7 +156,7 @@ GO_TEST_BINARY="gotest"
 				continue
 			}
 
-			p, err := ioutil.ReadFile(file)
+			p, err := os.ReadFile(file)
 			check(err)
 
 			ps := strings.Split(string(p), "\n")
@@ -167,7 +166,7 @@ GO_TEST_BINARY="gotest"
 		output, err := cmd.Flags().GetString("output")
 		check(err)
 
-		check(ioutil.WriteFile(output, []byte(payload), 0644))
+		check(os.WriteFile(output, []byte(payload), 0644))
 		return nil
 	},
 }
@@ -206,25 +205,6 @@ func init() {
 func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
-}
-
-type filter struct {
-	dtl io.Writer
-}
-
-func (f *filter) Write(p []byte) (n int, err error) {
-	for _, ppp := range strings.Split(string(p), "\n") {
-		if strings.Contains(ppp, "warning: no packages being tested depend on matches for pattern") {
-			continue
-		} else {
-			nn, err := f.dtl.Write(p)
-			n = n + nn
-			if err != nil {
-				return n, err
-			}
-		}
-	}
-	return len(p), nil
 }
 
 type cmdBuilder struct {
