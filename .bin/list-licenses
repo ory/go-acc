@@ -28,8 +28,14 @@ if [ -f go.mod ]; then
 		exit 1
 	fi
 
+	go_modules=$(go list -f "{{if not .Indirect}}{{.Path}}{{end}}" -m ... | sort -u)
+	if [ -z "$go_modules" ]; then
+		echo "No Go modules found" >&2
+		exit 0
+	fi
+
 	# Workaround until https://github.com/google/go-licenses/issues/307 is fixed
 	# .bin/go-licenses report "$module_name" --template .bin/license-template-go.tpl 2>/dev/null
-	go list -f "{{if not .Indirect}}{{.Path}}{{end}}" -m ... | xargs -I {} sh -c '.bin/go-licenses report --template .bin/license-template-go.tpl {}' 2>/dev/null | grep -v '^$'
+	echo "$go_modules" | xargs -I {} sh -c '.bin/go-licenses report --template .bin/license-template-go.tpl {}' 2>/dev/null | grep -v '^$'
 	{ echo; } 2>/dev/null
 fi
