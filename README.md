@@ -1,5 +1,8 @@
 # go-acc
 
+>[!IMPORTANT]
+>You do not need this tool, because Go now solves this [out of the box](https://dustinspecker.com/posts/go-combined-unit-integration-code-coverage/).
+
 A tool for reporting accurate Code Coverage in Golang. It is a cross platform (osx, windows, linux) adaption of the following bash script:
 
 ```bash
